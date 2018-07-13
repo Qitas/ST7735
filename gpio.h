@@ -1,51 +1,39 @@
-#define GPIO_BASE       0x3f200000UL
-//#define GPIO_BASE       0x20200000UL
-//#define GPIO_BASE       0xf2200000UL
+/*
+* Name :  spi.h 
+* Author: qitas
+*/
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>    
+#include <string.h>
+#include <unistd.h>
 
-#define GPIO_GPFSEL0    0
-#define GPIO_GPFSEL1    1
-#define GPIO_GPFSEL2    2
-#define GPIO_GPFSEL3    3
-#define GPIO_GPFSEL4    4
-#define GPIO_GPFSEL5    5
+#define GPIO_DIR_IN      0
+#define GPIO_DIR_OUT     1
+#define GPIO_PWM_OUT     2
 
-#define GPIO_GPSET0     7
-#define GPIO_GPSET1     8
+#define PIO_REG			           	0x01C20800
+#define PORT_LEN			    	(0x24)
+#define IOREG_LEN			    	(6*PORT_LEN)
 
-#define GPIO_GPCLR0     10
-#define GPIO_GPCLR1     11
-
-#define GPIO_GPLEV0     13
-#define GPIO_GPLEV1     14
-
-#define GPIO_GPEDS0     16
-#define GPIO_GPEDS1     17
-
-#define GPIO_GPREN0     19
-#define GPIO_GPREN1     20
-
-#define GPIO_GPFEN0     22
-#define GPIO_GPFEN1     23
-
-#define GPIO_GPHEN0     25
-#define GPIO_GPHEN1     26
-
-#define GPIO_GPLEN0     28
-#define GPIO_GPLEN1     29
-
-#define GPIO_GPAREN0    31
-#define GPIO_GPAREN1    32
-
-#define GPIO_GPAFEN0    34
-#define GPIO_GPAFEN1    35
-
-#define GPIO_GPPUD      37
-#define GPIO_GPPUDCLK0  38
-#define GPIO_GPPUDCLK1  39
+#define PB_REG						(1*PORT_LEN)
+#define PE_REG						(4*PORT_LEN)
 
 
+#define CONF0_REG				0x0
+#define CONF1_REG				0x4
+#define CONF2_REG				0x8
+#define CONF3_REG				0xC
+#define DATA_REG				0x10
 
-void gpio_mode_output (unsigned int pin);
-void gpio_set_pin (unsigned int pin);
-void gpio_clear_pin (unsigned int pin);
-void gpio_init(void);
+void gpio_mem_init();
+void gpio_close();
+
+void PE_init(int pin, uint8_t stat);
+void PE_set(int pin, uint8_t value);
+int  PE_get(int pin);
+
+
+void PB_init(int pin, uint8_t stat);
+void PB_set(int pin, uint8_t value);
+int PB_get(int pin);

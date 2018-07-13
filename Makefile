@@ -1,35 +1,20 @@
-CC=gcc
-CFLAGS=-c -std=c99 -O3 -I ./
-LDFLAGS=
-SOURCES=main.c st7735.c gpio.c spi.c
-OBJECTS=$(patsubst %.c, %.o, $(wildcard *.c))
-HEADERS = $(wildcard *.h)
-TARGET=lcd
+CFLAGS=-c -Wall -O2
+CC=arm-linux-gnueabihf-gcc
+AR=arm-linux-gnueabihf-ar
 
-all: $(TARGET)
-    
+objs = main.o spi.o fd.o gpio.o pwm.o lcd.o font.o 
+#dis.o
+
+all: show
 
 
-%.o:%.c $(HEADERS)
-	@echo "CC $@"
-	@$(CC) $(CFLAGS) -c $< -o $@
+show: $(objs)
+	$(CC) $(objs) -o show
 
-.PRECIOUS: $(TARGET) $(OBJECTS)
-
-$(TARGET): $(OBJECTS)
-	@echo "LD $@"
-	@$(CC) $(OBJECTS) -Wall $(LIBS) -o $@
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 
 clean:
-	@echo "[RM]	*.o"
-	@-rm -f *.o
-	@echo "[RM]	$(TARGET)"
-	@-rm -f $(TARGET)
-
-run:
-	sudo ./lcd &
-	sudo fbset -xres 160 -yres 120 -vxres 160 -vyres 120 -depth 16
-	sudo pkill lcd
-	sudo ./lcd &
+	rm  -rf *.o  show
 

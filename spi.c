@@ -1,98 +1,287 @@
+
 /*
-	 http://blog.vinu.co.in
-	 spi.c
-	 A bare minimum spi code for raspberry pi.
-
-
-	 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-		 but WITHOUT ANY WARRANTY; without even the implied warranty of
-		 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-		 GNU General Public License for more details.
-
-		 You should have received a copy of the GNU General Public License
-		 along with this program.  If not, see <http://www.gnu.org/licenses/>*/
+* Name :  spi.c
+* Author: qitas
+*/
 #include <stdio.h>
 #include <stdint.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <stdlib.h>    
 #include <string.h>
-#include <sys/ioctl.h>
-#include <asm/ioctl.h>
-#include <linux/spi/spidev.h>
+#include "spi.h"
 
-static const char *spiDev0 = "/dev/spidev0.0";
-static const char *spiDev1 = "/dev/spidev0.1";
-static uint32_t spiSpeed;
-static int spiFd;
-static const uint8_t spiBPW = 8;
-static const uint16_t spiDelay = 0;
 
-int spi_write_16(int channel, unsigned char *data, int len)
+void delayus(uint32_t us)
 {
-	struct spi_ioc_transfer spi;
-
-	channel &= 1;
-
-	static unsigned char bbb[4096];
-
-	memset(&spi, 0, sizeof(spi));
-
-	spi.tx_buf = (unsigned long)data;
-	spi.rx_buf = (unsigned long)bbb;
-	spi.len = len;
-	spi.delay_usecs = spiDelay;
-	spi.speed_hz = spiSpeed;
-	spi.bits_per_word = 16;
-
-	return ioctl(spiFd, SPI_IOC_MESSAGE(1), &spi);
+    volatile uint32_t i,j;
+    for(i=0;i<us;i++)
+    {
+    	j=0x0f;
+       	while(j--);
+    }
 }
 
-int spi_write(int channel, unsigned char *data, int len)
+void bit_delay()
 {
-	struct spi_ioc_transfer spi;
+	volatile uint16_t i=0x10;
+    while(i--);
+}
+//*****************************
 
-	channel &= 1;
-
-	static unsigned char bbb[4096];
-
-	memset(&spi, 0, sizeof(spi));
-
-	spi.tx_buf = (unsigned long)data;
-	spi.rx_buf = (unsigned long)bbb;
-	spi.len = len;
-	spi.delay_usecs = spiDelay;
-	spi.speed_hz = spiSpeed;
-	spi.bits_per_word = spiBPW;
-
-	return ioctl(spiFd, SPI_IOC_MESSAGE(1), &spi);
+inline void lcd_DC(char data) 
+{
+	PE_set(DC_Pin, data);
+}
+inline void LCD_Reset(char data) 
+{
+	PE_set(RES_Pin, data);
 }
 
-int spi_init(int channel, int speed, int mode)
+//*****************************
+
+
+inline void SPI_SET_CS(char data) 
 {
-	int fd;
+	PE_set(CS_Pin, data);
+}
 
-	mode &= 3;		// Mode is 0, 1, 2 or 3
-	channel &= 1;		// Channel is 0 or 1
+inline void SPI_SET_Clk(char data) 
+{
+	PE_set(CLK_Pin, data);
+}
 
-	if ((fd = open(channel == 0 ? spiDev0 : spiDev1, O_RDWR)) < 0)
-		printf("Unable to open SPI device\n");
+inline void SPI_SET_MOSI(char data) 
+{
+	PE_set(MOSI_Pin, data);
+}
 
-	spiSpeed = speed;
-	spiFd = fd;
+inline char SPI_GET_MISO() 
+{
+	return PE_get(MISO_Pin);
+}
 
-	if (ioctl(fd, SPI_IOC_WR_MODE, &mode) < 0)
-		printf("SPI mode change failure\n");
+//*****************************
 
-	if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &spiBPW) < 0)
-		printf("SPI BPW change failure\n");
+void SPI_soft_init(void) 
+{
+	gpio_mem_init();
+	//printf("gpio open done\n");	
+	
+	PE_init(MOSI_Pin, GPIO_DIR_OUT);
+	PE_init(CLK_Pin, GPIO_DIR_OUT);
+	PE_init(CS_Pin, GPIO_DIR_OUT);
+	PE_init(MISO_Pin, GPIO_DIR_IN);
 
-	if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
-		printf("SPI SPEED change failure\n");
+}
 
-	return fd;
+
+#if SPI_CPOL==0 && SPI_CPHA==0  
+
+void SPI_send_byte(char data)
+{
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();		
+		if(data & 0x80) SPI_SET_MOSI(1);
+		else SPI_SET_MOSI(0);
+		bit_delay();
+		SPI_SET_Clk(1);
+		data <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	//bit_delay();
+}
+
+char SPI_read_byte()
+{
+	char  ret=0; 
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();	
+		if(SPI_GET_MISO()) ret+=1; 
+		bit_delay();
+		SPI_SET_Clk(1);
+		ret <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	bit_delay();
+	return ret;
+}
+#endif
+
+
+#if SPI_CPOL==1 && SPI_CPHA==0  
+void SPI_send_byte(char data)
+{
+	SPI_SET_CS(0);
+	SPI_SET_Clk(1);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();		
+		if(data & 0x80) SPI_SET_MOSI(1);
+		else SPI_SET_MOSI(0);
+		bit_delay();
+		//CLK = 1
+		SPI_SET_Clk(1);
+		data <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(1);
+	SPI_SET_CS(1);
+	bit_delay();
+}
+
+char SPI_read_byte()
+{
+	char  ret; 
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+ 	ret=0;
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();	
+		if(SPI_GET_MISO()) ret+=1; 
+		bit_delay();
+		SPI_SET_Clk(1);
+		ret <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	bit_delay();
+	return ret;
+}
+#endif
+
+
+#if SPI_CPOL==0 && SPI_CPHA==1  
+void SPI_send_byte(char data)
+{
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(1);
+		bit_delay();		
+		if(data & 0x80) SPI_SET_MOSI(1);
+		else SPI_SET_MOSI(0);
+		bit_delay();
+		SPI_SET_Clk(0);
+		data <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	bit_delay();
+}
+
+char SPI_read_byte()
+{
+	char  ret=0; 
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();	
+		if(SPI_GET_MISO()) ret+=1; 
+		bit_delay();
+		SPI_SET_Clk(1);
+		ret <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	bit_delay();
+	return ret;
+}
+#endif
+
+
+#if SPI_CPOL==1 && SPI_CPHA==1  
+void SPI_send_byte(char data)
+{
+	SPI_SET_CS(0);
+	SPI_SET_Clk(1);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(1);
+		bit_delay();		
+		if(data & 0x80) SPI_SET_MOSI(1);
+		else SPI_SET_MOSI(0);
+		bit_delay();
+		SPI_SET_Clk(0);
+		data <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(1);
+	SPI_SET_CS(1);
+	bit_delay();
+}
+
+char SPI_read_byte()
+{
+	char  ret=0; 
+	SPI_SET_CS(0);
+	SPI_SET_Clk(0);
+
+	for(char i = 0; i<8; i++)
+	{
+		SPI_SET_Clk(0);
+		bit_delay();	
+		if(SPI_GET_MISO()) ret+=1; 
+		bit_delay();
+		SPI_SET_Clk(1);
+		ret <<= 1; 
+		bit_delay();
+	}
+
+	SPI_SET_Clk(0);
+	SPI_SET_CS(1);
+	bit_delay();
+	return ret;
+}
+#endif
+
+
+
+
+
+void tst()
+{
+	while(1)
+	{
+		PE_init(CS_Pin, 1);
+		delayus(2000);
+		PE_init(CS_Pin, 3);
+		delayus(2000);
+		PE_init(CS_Pin, 0);
+		delayus(2000);
+		PE_init(CS_Pin, 7);
+		delayus(2000);
+	}
 }

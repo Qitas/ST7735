@@ -1,75 +1,210 @@
+
 /*
-	 gpio.c
-	 http://blog.vinu.co.in
-	 
-	 A very basic raspberrypi gpio driver written only for this project.
-	 So all features are not implemented. The code is written based on 
-	 BCM2835-ARM-Peripherals.pdf
-	 
-	 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+* Name :  gpio.c
+* Author: qitas
+*/
 
-This program is distributed in the hope that it will be useful,
-		 but WITHOUT ANY WARRANTY; without even the implied warranty of
-		 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-		 GNU General Public License for more details.
-
-		 You should have received a copy of the GNU General Public License
-		 along with this program.  If not, see <http://www.gnu.org/licenses/>*/
-
-#include "gpio.h"
-#include <unistd.h>
 #include <sys/mman.h>
-#include <stdio.h>
-#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include "gpio.h"
 
-volatile unsigned int *gpio = MAP_FAILED;
+#define MMAP_PATH   "/dev/mem"
 
-void gpio_mode_output(unsigned pin)
+static void *mmap_reg=NULL;
+static void *data_addr=NULL;
+static int mmap_fd = 0;
+
+int mem_init(uint32_t addr,uint32_t len)
 {
-	int x;
 
-	int p = pin;
-	while (p > 9) {
-		p -= 10;
-	}
+    uint32_t target;
+    uint32_t page_size, mapped_size, offset_in_page;
+    uint32_t width = 8 * sizeof(int);
 
-	gpio[GPIO_GPFSEL0 + pin / 10] |= 1UL << (p * 3);	//make as output
-	//gpio[GPIO_GPFSEL0 + pin/10] &= ~( 1 << (p*3) ); //use this to make input. 
+    target = addr; 
+
+    mmap_fd = open(MMAP_PATH, (O_RDWR | O_SYNC));
+
+    mapped_size = page_size = getpagesize();
+
+    offset_in_page = (uint32_t)target & (page_size - 1);
+
+    if (offset_in_page + width > page_size) 
+    {
+        mapped_size *= 2;
+    }
+    mapped_size =len;
+    mmap_reg = mmap(NULL,
+            mapped_size,
+            (PROT_READ | PROT_WRITE),
+            MAP_SHARED,
+            mmap_fd,
+            target& ~(uint32_t)(page_size - 1));// 
+
+    if (mmap_reg == MAP_FAILED)
+    {
+        perror("get mmap reg fail. ");
+    }
+    data_addr = (char*)mmap_reg + offset_in_page;
+    return 0;
 }
 
-void gpio_set_pin(unsigned int pin)
+void gpio_mem_init() 
 {
-	gpio[GPIO_GPSET0 + pin / 32] = (1UL << ((pin - (pin / 32) * 32)));
+    //uint32_t tmp;
+    //printf("%x, %x\n", PIO_REG,IOREG_LEN);
+    if (mem_init(PIO_REG,IOREG_LEN)) fprintf(stderr, "failed to init gpio. ");
+    //tmp = *(volatile uint32_t*)data_addr;
+    //printf("%x\n", tmp);
 }
 
-void gpio_clear_pin(unsigned int pin)
+
+void PB_init(int pin, uint8_t stat)
 {
-	gpio[GPIO_GPCLR0 + pin / 32] = (1UL << ((pin - (pin / 32) * 32)));
+    uint32_t tmp;
+    uint32_t addr;
+    int pin_tmp;
+
+    if (pin < 8) 
+    {
+        addr=PB_REG + CONF0_REG;
+        //addr= CONF0_REG;
+        pin_tmp = (4*pin);
+       
+        tmp = *(volatile uint32_t *)(data_addr+addr);
+        printf("%x\n", tmp);
+        tmp &= ~(0x0f << pin_tmp);
+        tmp |=  ((stat&0x0f) << pin_tmp);
+        *(volatile uint32_t *)(data_addr+addr) = tmp;
+        //printf("%x\n", tmp);
+    } 
+    else if (pin <= 15) 
+    {
+        addr=PB_REG + CONF1_REG;
+        //addr= CONF1_REG;
+        pin_tmp = (4*(pin-8));
+        tmp = *(volatile uint32_t *)(data_addr + addr);
+        tmp &= ~(0x0f << pin_tmp);
+        tmp |=  ((stat&0x0f) << pin_tmp);
+        *(volatile uint32_t *)(data_addr + addr) = tmp;
+        //printf("%x\n", tmp);
+    }      
 }
 
-void gpio_init(void)
+int PB_get(int pin)
 {
-	int memfd = -1;
+    uint32_t tmp = 0;
+    uint32_t addr = PB_REG+ DATA_REG;
+    tmp = *(volatile uint32_t*)(data_addr + addr);
+    tmp = (tmp >> pin) & 1u;
+    return tmp;
+}
 
-	if ((memfd = open("/dev/mem", O_RDWR | O_SYNC)) < 0) {
-		fprintf(stderr, "/dev/mem open error\n");
-		return;
-	}
+void PB_set(int pin, uint8_t value)
+{
+    uint32_t tmp;
+    uint32_t addr = PB_REG+ DATA_REG;
+    //addr = DATA_REG;
+    if (pin <= 24) 
+    {    
+        tmp = *(volatile uint32_t*)(data_addr + addr);
+        if (value)
+        {
+            tmp |= (1u << pin);
+            *(volatile uint32_t*)(data_addr + addr) = tmp;
+        }
+        else
+        {
+            tmp &= ~(1u << pin);
+            *(volatile uint32_t*)(data_addr + addr) = tmp;
+        }
+        //printf("%x\n", tmp);
+    }
+    
+}
 
-	gpio =
-	    mmap(NULL, 4096, (PROT_READ | PROT_WRITE), MAP_SHARED, memfd,
-		 0x20200000);
-	if (gpio == MAP_FAILED) {
-		fprintf(stderr, "mmap failed\n");
-		return;
-	}
-	printf("gpio mmap value = %x\n", gpio);
 
-//                              gpio = (unsigned int *)GPIO_BASE;
+
+void PE_init(int pin, uint8_t stat)
+{
+    uint32_t tmp;
+    uint32_t addr;
+    int pin_tmp;
+    
+    if (pin <= 7) 
+    {
+        addr=PE_REG + CONF0_REG;
+        //addr= CONF0_REG;
+        pin_tmp = (4*pin);
+        printf("%d\n", pin_tmp);  
+        tmp = *(volatile uint32_t *)(data_addr+addr);
+        tmp &= ~(0x0f << pin_tmp);
+        tmp |=  ((stat&0x0f) << pin_tmp);
+        *(volatile uint32_t *)(data_addr + addr) = tmp;
+    } 
+    else if (pin <= 15) 
+    {
+        addr=PE_REG + CONF1_REG;
+        //addr= CONF1_REG;
+        pin_tmp = (4*(pin-8));
+        tmp = *(volatile uint32_t *)(data_addr + addr);
+        tmp &= ~(0x0f << pin_tmp);
+        tmp |=  ((stat&0x0f) << pin_tmp);
+        *(volatile uint32_t *)(data_addr + addr) = tmp;
+    } 
+    else if (pin <= 23) 
+    {
+        addr=PE_REG + CONF2_REG;
+        //addr = CONF2_REG;
+        pin_tmp =  (4*(pin-16));
+        tmp = *(volatile uint32_t *)(data_addr + addr);
+        tmp &= ~(0x0f << pin_tmp);
+        tmp |=  ((stat&0x0f) << pin_tmp);
+        *(volatile uint32_t *)(data_addr + addr) = tmp;
+    } 
+}
+
+int PE_get(int pin)
+{
+    uint32_t tmp = 0;
+    uint32_t addr = PE_REG+ DATA_REG;
+    tmp = *(volatile uint32_t*)(data_addr + addr);
+    tmp = (tmp >> pin) & 1u;
+    return tmp;
+}
+
+void PE_set(int pin, uint8_t value)
+{
+    uint32_t tmp;
+    uint32_t addr = PE_REG+ DATA_REG;
+    //addr = DATA_REG;
+    if (pin <= 24) 
+    {    
+        tmp = *(volatile uint32_t*)(data_addr + addr);
+        if (value)
+        {
+            tmp |= (1u << pin);
+            *(volatile uint32_t*)(data_addr + addr) = tmp;
+        }
+        else
+        {
+            tmp &= ~(1u << pin);
+            *(volatile uint32_t*)(data_addr + addr) = tmp;
+        }
+        //printf("%x\n", tmp);
+    }
+    
+}
+
+
+
+void gpio_close() 
+{
+    if (mmap_fd)
+    {
+        munmap(mmap_reg, 0x100);
+        close(mmap_fd);
+    }
 }

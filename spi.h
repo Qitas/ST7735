@@ -1,34 +1,33 @@
 /*
- * wiringPiSPI.h:
- *	Simplified SPI access routines
- *	Copyright (c) 2012-2015 Gordon Henderson
- ***********************************************************************
- * This file is part of wiringPi:
- *	https://projects.drogon.net/raspberry-pi/wiringpi/
- *
- *    wiringPi is free software: you can redistribute it and/or modify
- *    it under the terms of the GNU Lesser General Public License as
- *    published by the Free Software Foundation, either version 3 of the
- *    License, or (at your option) any later version.
- *
- *    wiringPi is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *    GNU Lesser General Public License for more details.
- *
- *    You should have received a copy of the GNU Lesser General Public
- *    License along with wiringPi.
- *    If not, see <http://www.gnu.org/licenses/>.
- ***********************************************************************
- */
+* Name :  spi.h 
+* Author: qitas
+*/
+#include <unistd.h>
+#include <stdlib.h>
+#include "gpio.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define SPI_CPOL   		0
+#define SPI_CPHA   		0
 
-int spi_write    (int channel, unsigned char *data, int len) ;
-int spi_init (int channel, int speed, int mode) ;
+#define RES_Pin   		7 	//GPIO6
+#define MOSI_Pin  		11	//GPIO5
+#define MISO_Pin  		17	//GPIO4
+#define CLK_Pin   		14	//GPIO3
+#define CS_Pin    		16	//GPIO2
+#define DC_Pin    		12	
 
-#ifdef __cplusplus
-}
-#endif
+
+
+void delayus(uint32_t us);
+
+void SPI_soft_init(void);
+void SPI_send_byte(char data);
+char SPI_read_byte();
+
+void lcd_DC(char data) ;
+void LCD_Reset(char data) ;
+void SPI_SET_Clk(char data) ;
+void SPI_SET_CS(char data) ;
+void SPI_SET_MOSI(char data) ;
+void bit_delay();
+void tst();
