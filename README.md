@@ -12,6 +12,10 @@ linux framebuffer0 to ST7735 SPI LCD driver and test files
 
 包括C文件和makefile文件，可以编译相关的驱动
 
+#### code
+
+使用在MCU上的驱动代码
+
 ---
 
 ## 为锻造最美之器
