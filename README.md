@@ -8,7 +8,9 @@
 
 ## [资源](https://github.com/qitas/bootloader/wiki) 
 
-陆续添加相关代码和工程
+#### [loader](loader/) 
+
+启动引导代码，包括密钥的导入机制
 
 ---
 
