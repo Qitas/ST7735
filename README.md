@@ -1,26 +1,20 @@
-# ST7735 driver
+# [bootloader](https://github.com/qitas/bootloader) 
 
-## 简介
+### qitas@qitas.cn
 
-linux framebuffer0 to ST7735 SPI LCD driver and test files
+## [描述](https://github.com/qitas/bootloader/wiki) 
 
----
+基于单片机平台的安全机制实施
 
-## 组成
+## [资源](https://github.com/qitas/bootloader/wiki) 
 
-#### driver
-
-包括C文件和makefile文件，可以编译相关的驱动
-
-#### code
-
-使用在MCU上的驱动代码
+陆续添加相关代码和工程
 
 ---
 
-## 为锻造最美之器
+### 锻造最美之器
 
-[![sites](adv/qitas.png)](http://www.qitas.cn)
+[![sites](qitas/qitas.png)](http://www.qitas.cn)
 
 
 
