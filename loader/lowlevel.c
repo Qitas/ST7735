@@ -95,14 +95,13 @@ uint32_t flash_set_option_bytes(void)
 
 secbool flash_configure_option_bytes(void)
 {
-    if (sectrue == flash_check_option_bytes()) {
-        return sectrue; // we DID NOT have to change the option bytes
+    if (sectrue == flash_check_option_bytes()) 
+	{
+        return sectrue; 
     }
-
-    do {
+    do{
         flash_set_option_bytes();
-    } while(sectrue != flash_check_option_bytes());
-
+    }while(sectrue != flash_check_option_bytes());
     return secfalse; // notify that we DID have to change the option bytes
 }
 

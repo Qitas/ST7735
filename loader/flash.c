@@ -6,8 +6,8 @@
 #include "common.h"
 #include "flash.h"
 
-#define FLASH_KEY1               ((uint32_t)0x45670123)
-#define FLASH_KEY2               ((uint32_t)0xCDEF89AB)
+//#define FLASH_KEY1               ((uint32_t)0x45670123)
+//#define FLASH_KEY2               ((uint32_t)0xCDEF89AB)
 
 typedef enum
 {
@@ -19,18 +19,18 @@ typedef enum
 
 HAL_StatusTypeDef HAL_FLASH_Unlock(void)
 {
-  if((FLASH->CR & FLASH_CR_LOCK) != RESET)
-  {
-    /* Authorize the FLASH Registers access */
-    FLASH->KEYR = FLASH_KEY1;
-    FLASH->KEYR = FLASH_KEY2;
-  }
-  else
-  {
-    return HAL_ERROR;
-  }
-
-  return HAL_OK;
+//	if((FLASH->CR & FLASH_CR_LOCK) != RESET)
+//	{
+//		/* Authorize the FLASH Registers access */
+//		FLASH->KEYR = FLASH_KEY1;
+//		FLASH->KEYR = FLASH_KEY2;
+//	}
+//	else
+//	{
+//		return HAL_ERROR;
+//	}
+	FLASH_Unlock();
+	return HAL_OK;
 }
 
 /**
@@ -39,10 +39,10 @@ HAL_StatusTypeDef HAL_FLASH_Unlock(void)
   */
 HAL_StatusTypeDef HAL_FLASH_Lock(void)
 {
-  /* Set the LOCK Bit to lock the FLASH Registers access */
-  FLASH->CR |= FLASH_CR_LOCK;
-
-  return HAL_OK;
+	/* Set the LOCK Bit to lock the FLASH Registers access */
+	//FLASH->CR |= FLASH_CR_LOCK;
+	FLASH_Lock();
+	return HAL_OK;
 }
 
 // see docs/memory.md for more information
@@ -81,24 +81,15 @@ void flash_init(void)
 
 secbool flash_unlock(void)
 {
-	HAL_FLASH_Unlock();
-//	  if((FLASH->CR & FLASH_CR_LOCK) != RESET)
-//	  {
-//		/* Authorize the FLASH Registers access */
-//		FLASH->KEYR = FLASH_KEY1;
-//		FLASH->KEYR = FLASH_KEY2;
-//	  }
-//	  else
-//	  {
-//		return HAL_ERROR;
-//	  }
-//	FLASH->SR |= FLASH_STATUS_ALL_FLAGS; // clear all status flags
+	//HAL_FLASH_Unlock();
+	FLASH_Unlock();
 	return sectrue;
 }
 
 secbool flash_lock(void)
 {
-    HAL_FLASH_Lock();
+    //HAL_FLASH_Lock();
+	FLASH_Lock();
     return sectrue;
 }
 
@@ -150,23 +141,24 @@ secbool flash_erase_sectors(const uint8_t *sectors, int len, void (*progress)(in
 
 secbool flash_write_byte(uint8_t sector, uint32_t offset, uint8_t data)
 {
-//    uint32_t address = (uint32_t)flash_get_address(sector, offset, 1);
-//    if (address == 0) {
-//        return secfalse;
-//    }
-//    return sectrue * (HAL_OK == HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, address, data));
+    uint32_t address = (uint32_t)flash_get_address(sector, offset, 1);
+    if (address == 0) 
+	{
+        return secfalse;
+    }
+    return sectrue * (HAL_OK == FLASH_ProgramHalfWord(address, data));
 }
 
 secbool flash_write_word(uint8_t sector, uint32_t offset, uint32_t data)
 {
-//    uint32_t address = (uint32_t)flash_get_address(sector, offset, 4);
-//    if (address == 0) {
-//        return secfalse;
-//    }
-//    if (offset % 4 != 0) {
-//        return secfalse;
-//    }
-//    return sectrue * (HAL_OK == HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, address, data));
+    uint32_t address = (uint32_t)flash_get_address(sector, offset, 4);
+    if (address == 0) {
+        return secfalse;
+    }
+    if (offset % 4 != 0) {
+        return secfalse;
+    }
+    return sectrue * (HAL_OK == FLASH_ProgramWord(address, data));
 }
 
 #define FLASH_OTP_LOCK_BASE       0x1FFF7A00U

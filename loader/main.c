@@ -32,7 +32,8 @@ static const uint8_t * const BOARDLOADER_KEYS[] = {
 
 int main(void)
 {
-    if (sectrue != reset_flags_check()) {
+    if (sectrue != reset_flags_check()) 
+	{
         return 1;
     }
 
@@ -40,8 +41,10 @@ int main(void)
     // want the PVD enabled before flash operations too.
     periph_init();
 
-    if (sectrue != flash_configure_option_bytes()) {
-        static const uint8_t sectors[] = {
+    if (sectrue != flash_configure_option_bytes()) 
+	{
+        static const uint8_t sectors[] = 
+		{
             FLASH_SECTOR_STORAGE_1,
             FLASH_SECTOR_STORAGE_2,
         };
@@ -69,7 +72,8 @@ int main(void)
     ensure(
         check_image_contents(&hdr, IMAGE_HEADER_SIZE, sectors, 1),
         "invalid bootloader hash");
-
+	
+	SCB->VTOR = (BOOTLOADER_START + IMAGE_HEADER_SIZE); 
     //jump_to(BOOTLOADER_START + IMAGE_HEADER_SIZE);
 
     return 0;
