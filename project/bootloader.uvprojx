@@ -48,14 +48,14 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>test</OutputName>
+          <OutputDirectory>.\obj\</OutputDirectory>
+          <OutputName>loader</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
-          <ListingPath>.\Listings\</ListingPath>
+          <ListingPath>.\list\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
           <CreateBatchFile>0</CreateBatchFile>
@@ -80,9 +80,9 @@
             <nStopB2X>0</nStopB2X>
           </BeforeMake>
           <AfterMake>
-            <RunUserProg1>0</RunUserProg1>
+            <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name></UserProg1Name>
+            <UserProg1Name>fromelf.exe --bin -o ./loader.bin ./obj/loader.axf</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -411,11 +411,6 @@
               <FileType>1</FileType>
               <FilePath>..\loader\blake2s.c</FilePath>
             </File>
-            <File>
-              <FileName>memzero.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\loader\memzero.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -533,7 +528,7 @@
           <targetInfo name="qitas"/>
         </targetInfos>
       </file>
-      <file attr="config" category="header" name="Device\Source\startup_config.h" version="8.17.0">
+      <file attr="config" category="header" name="Device\Source\startup_config.h">
         <instance index="0">RTE\Device\STM32F103CB\startup_config.h</instance>
         <component Cclass="Device" Cgroup="StartupConfig" Cvendor="NordicSemiconductor" Cversion="8.17.0" condition="Startup"/>
         <package license="License\license.txt" name="nRF_DeviceFamilyPack" schemaVersion="1.3" url="http://developer.nordicsemi.com/nRF5_SDK/pieces/nRF_DeviceFamilyPack/" vendor="NordicSemiconductor" version="8.17.0"/>

@@ -1,8 +1,12 @@
 #include <string.h>
-
 #include "blake2s.h"
 #include "blake2_common.h"
-#include "memzero.h"
+
+
+static void memsetzero(void *s, size_t n)
+{
+	memset(s, 0, n);
+}
 
 typedef struct blake2s_param__
 {
@@ -162,7 +166,7 @@ int blake2s_InitKey( blake2s_state *S, size_t outlen, const void *key, size_t ke
     memset( block, 0, BLAKE2S_BLOCKBYTES );
     memcpy( block, key, keylen );
     blake2s_Update( S, block, BLAKE2S_BLOCKBYTES );
-    memzero( block, BLAKE2S_BLOCKBYTES ); /* Burn the key from stack */
+    memsetzero( block, BLAKE2S_BLOCKBYTES ); /* Burn the key from stack */
   }
   return 0;
 }
@@ -280,7 +284,7 @@ int blake2s_Final( blake2s_state *S, void *out, size_t outlen )
     store32( buffer + sizeof( S->h[i] ) * i, S->h[i] );
 
   memcpy( out, buffer, outlen );
-  memzero(buffer, sizeof(buffer));
+  memsetzero(buffer, sizeof(buffer));
   return 0;
 }
 

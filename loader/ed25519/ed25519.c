@@ -9,7 +9,6 @@
 
 #include "ed25519-donna.h"
 #include "ed25519.h"
-
 #include "ed25519-hash-custom.h"
 
 /*

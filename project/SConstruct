@@ -1,0 +1,4 @@
+# pylint: disable=E0602
+
+SConscript('SConscript.loader', variant_dir='build/loader', duplicate=False)
+
